@@ -1,7 +1,13 @@
 #!/bin/bash
+: ${DIALOG_OK=0}
 
+# Duplicate file descriptor 1 on descriptor 3
+exec 3>&1
+
+# Get all branches
 branches=($(git branch | grep "^[^*]"))
 
+# Create params
 i=0
 params=""
 
@@ -10,12 +16,17 @@ for branch in ${branches[@]};do
   ((i=i+1))
 done
 
-res="dialog --clear --menu choose 15 50 4  $params"
+# Show dialog
+name=$(dialog --clear --menu choose 0 0 4 $params 2>&1 1>&3)
+ret=$?
 
-selection="$res 2>&1 1>&3"
-exec 3>&1
-branchName=`eval $selection`
+# Close file descriptor 3
 exec 3>&-
+
 clear
 
-git checkout ${branches[$branchName]}
+if [ $ret = $DIALOG_OK ]
+then
+  echo switching to branch ${branches[$name]}
+  git checkout ${branches[$name]}
+fi
